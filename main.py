@@ -475,7 +475,7 @@ class CenaFimPartida(SceneBase):
         if not self.new_record and (time.time() - self.tempo) >= self.espera and self.mouse_button:
             SceneManager.scene = CenaInicial()
         if self.new_record and self.confirmed:
-            SceneManager.scene = CenaInicial()#CenaScore
+            SceneManager.scene = CenaPontuacoes()
     
     def finish(self):
         if self.new_record:
