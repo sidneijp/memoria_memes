@@ -495,25 +495,58 @@ class CenaPontuacoes(SceneBase):
         self.tempo = time.time()
         self.espera = 2
         self.mouse_button = False
+        self.mouse_pos = (-1, -1)
+        self.exit_button = Botao("sair", "sair.png", x=1168/2, y=220)
         
     def render(self):
         SceneManager.screen.blit(self.imagem, (0, 0))
+        self.exit_button.render()
+        text = 'Nome\tPontuação\tTempo'
+        text = text.decode('utf-8')
+        x = 0
+        for i in text.split('\t'):
+            font_surface = FONTE.render(i, False, Color(0, 0, 0))
+            SceneManager.screen.blit(font_surface, (x, 0))
+            x += 100
+        y = font_surface.get_height() + 2
+        for record in Rank.get_records():
+            text = '%s\t%s\t%ss' % (record.name, record.score, record.time)
+            text = text.decode('utf-8')
+            x = 0
+            for i in text.split('\t'):
+                font_surface = FONTE.render(i, False, Color(0, 0, 0))
+                SceneManager.screen.blit(font_surface, (x, y))
+                x += 100
+            y += font_surface.get_height() + 2
         
     def pygame_events(self, e):
         super(CenaPontuacoes, self).pygame_events(e)
         if e.type == MOUSEBUTTONDOWN:
             self.mouse_button = True
+            self.mouse_pos = e.pos
 
     def process(self):
-        if (time.time() - self.tempo) >= self.espera and self.mouse_button:
-            SceneManager.scene = CenaInicial()
+        opcao = self.opcaoClicada()
+        if opcao is not None:
+            if opcao.nome == "sair":
+                SceneManager.scene = CenaInicial()
+        self.mouse_button = False # resetar clique
             
     def finish(self):
         del self.imagem
         del self.tempo
         del self.espera
         del self.mouse_button
-
+        del self.mouse_pos
+        del self.exit_button
+        
+    def opcaoClicada(self):
+        x = self.mouse_pos[0]
+        y = self.mouse_pos[1]
+        if self.mouse_button:
+            if self.exit_button.verificarClique(x, y):
+                return self.exit_button
+        return None
 #class CenaCreditos(SceneBase):
 #    pass #
     
