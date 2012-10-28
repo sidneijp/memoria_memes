@@ -9,9 +9,11 @@ import time
 import math
 from datetime import datetime
 import pickle
+import copy
 
 pygame.init()
 
+RANK_LIMIT = 10
 RECORDS_FILE = 'data/records.db'
 VAZIO = pygame.Color(0, 0, 0, 0)
 FUNDO_CARTA = pygame.image.load("imagens/fundo.jpg")
@@ -228,7 +230,7 @@ class Rank(object):
     @classmethod
     def load(cls):
         if cls.__records is not None:
-            return False
+            return
         records_file = None
         try:
             records_file = open(RECORDS_FILE)
@@ -240,7 +242,6 @@ class Rank(object):
         cls.__records = pickle.load(records_file)
         cls.__records = sorted(cls.__records, key=lambda x: x.time)
         cls.__records = sorted(cls.__records, key=lambda x: x.score, reverse=True)
-        return True
 
     @classmethod
     def __save(cls):
@@ -249,18 +250,53 @@ class Rank(object):
 
     @classmethod
     def is_record(cls, record):
-        pass
+        rank_length = len(cls.__records) 
+        if rank_length < RANK_LIMIT:
+            return True
+        i = 0
+        draw = False
+        for i, r in enumerate(cls.__records[:RANK_LIMIT]):
+            if record.score > r.score:
+                return True
+            if record.score == r.score:
+                draw = True
+                break
+        if draw:
+            for i, r in enumerate(cls.__records[i:RANK_LIMIT], i):
+                if record.time < r.time:
+                    return True
+        return False
 
     @classmethod
-    def p(cls):
-        for r in cls.__records:
-            print r.name
+    def get_records(cls):
+        return copy.deepcopy(cls.__records)
 
     @classmethod
     def add(cls, record):
-        cls.__records.append(record)
-        cls.__save()
-
+        rank_length = len(cls.__records) 
+        if rank_length == RANK_LIMIT:
+            cls.__records.pop()
+            rank_length = RANK_LIMIT - 1 
+        i = 0
+        draw = False
+        for i, r in enumerate(cls.__records[:rank_length]):
+            if record.score > r.score:
+                cls.__records.insert(i, record)
+                cls.__save()
+                return
+            if record.score == r.score:
+                draw = True
+                break
+        if draw:
+            for i, r in enumerate(cls.__records[i:rank_length], i):
+                if record.time < r.time:
+                    cls.__records.insert(i, record)
+                    cls.__save()
+                    return
+        if rank_length < RANK_LIMIT:
+            cls.__records.append(record)
+            cls.__save()
+        
 
 #Cena do Jogo
 class CenaJogo(SceneBase):
