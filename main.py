@@ -4,7 +4,6 @@ import pygame
 from pygame.locals import *
 from pygame.rect import Rect
 from random import shuffle
-#from random import random # Em construcao
 import time
 import math
 from datetime import datetime
@@ -13,6 +12,7 @@ import copy
 
 pygame.init()
 
+NAME_SIZE_LIMIT = 8
 RANK_LIMIT = 10
 RECORDS_FILE = 'data/records.db'
 VAZIO = pygame.Color(0, 0, 0, 0)
@@ -30,6 +30,7 @@ MEMES = [("challenge.png", 0),
         ("poker.png", 6),
         ("troll.png", 7)]
 MEMES.extend(list(MEMES))
+
 
 class SceneManager(object):
     """ Classe que gerencia as Cenas"""
@@ -55,6 +56,7 @@ class SceneManager(object):
     @staticmethod
     def exit():
         SceneManager.scene = None
+
 
 class SceneBase(object):
 
@@ -90,6 +92,7 @@ class SceneBase(object):
     def finish(self):
         pass
 
+
 class Botao(object):
 
     def __init__(self, nome, imagem, x=0, y=0):
@@ -109,29 +112,37 @@ class Botao(object):
             if y >= self.y and y <= self.y + self.imagem.get_height():
                 return True
         return False
+
         
 class Relogio(object):
 
-    def __init__(self, minutos, segundos=0):
-        self.minutos = minutos
-        self.segundos = segundos
+    def __init__(self, minutes, seconds=0):
+        self.minutes = minutes
+        self.seconds = seconds
         
-    def decremento(self):
-        if self.segundos > 0:
-            self.segundos -= 1
+    def decrement(self):
+        if self.seconds > 0:
+            self.seconds -= 1
         else:
-            self.minutos -= 1
-            self.segundos = 59
+            self.minutes -= 1
+            self.seconds = 59
         
     def zero(self):
-        if self.minutos < 0:
+        if self.minutes < 0:
             return True
         return False
-        
+
+    def get_minutes(self):
+        return self.minutes
+
+    def get_seconds(self):
+        return self.seconds
+
     def render(self, x, y):
-        texto = "Tempo: %2d : %2d" % (self.minutos, self.segundos)
-        fonte_superficie = FONTE.render(texto, False, Color(255,255,255))
-        SceneManager.screen.blit(fonte_superficie, (x, y))
+        text = "Tempo: %2d : %2d" % (self.minutes, self.seconds)
+        font_surface = FONTE.render(text, False, Color(255,255,255))
+        SceneManager.screen.blit(font_surface, (x, y))
+
         
 class Carta(object):
     """ Classe que define as cartas do jogo """
@@ -165,60 +176,9 @@ class Carta(object):
         SceneManager.screen.blit(superficie, (self.x, self.y))
         self.retirada = True
 
-class CenaInicial(SceneBase):
-    """ Tela inicial do Jogo """
-    
-    def start(self):
-        self.mouse_button = False
-        self.mouse_pos = (-1, -1)
-        self.opcoes = [ Botao("iniciar", "iniciar.png", x=1168/2, y=100),
-                        Botao("ranking", "ranking.png", x=1168/2, y=160),
-                        #Botao("creditos", "creditos.png", x=1168/2, y=300),
-                        Botao("sair", "sair.png", x=1168/2, y=220) ]
-        
-    def render(self):
-        FUNDO = pygame.image.load("imagens/plano_de_fundo.jpg")
-        SceneManager.screen.blit(FUNDO, (0, 0))
-        for opcao in self.opcoes:
-            opcao.render()
-        
-    def pygame_events(self, e):
-        super(CenaInicial, self).pygame_events(e)
-        if e.type == MOUSEBUTTONDOWN:
-            self.mouse_button = True
-            self.mouse_pos = e.pos
-            
-    def process(self):
-        opcao = self.opcaoClicada()
-        if opcao is not None:
-            if opcao.nome == "iniciar":
-                SceneManager.scene = CenaJogo()
-            elif opcao.nome == "ranking":
-                SceneManager.scene = CenaPontuacoes()
-            elif opcao.nome == "creditos":
-                SceneManager.scene = CenaCreditos()
-            elif opcao.nome == "sair":
-                SceneManager.exit()
-        self.mouse_button = False # resetar clique
-        
-    def opcaoClicada(self):
-        x = self.mouse_pos[0]
-        y = self.mouse_pos[1]
-        if self.mouse_button:
-            for opcao in self.opcoes:
-                if opcao.verificarClique(x, y):
-                    return opcao
-        return None
-    
-    def finish(self):
-        del self.opcoes
-        del self.mouse_pos
-        del self.mouse_button
-       
 
 class Record(object):
-    def __init__(self, name, score, time, date=datetime.now()):
-        self.name = name
+    def __init__(self, score, time, date=datetime.now()):
         self.score = score
         self.time = time
         self.date = date 
@@ -298,6 +258,57 @@ class Rank(object):
             cls.__save()
         
 
+class CenaInicial(SceneBase):
+    """ Tela inicial do Jogo """
+    
+    def start(self):
+        self.mouse_button = False
+        self.mouse_pos = (-1, -1)
+        self.opcoes = [ Botao("iniciar", "iniciar.png", x=1168/2, y=100),
+                        Botao("ranking", "ranking.png", x=1168/2, y=160),
+                        #Botao("creditos", "creditos.png", x=1168/2, y=300),
+                        Botao("sair", "sair.png", x=1168/2, y=220) ]
+        
+    def render(self):
+        FUNDO = pygame.image.load("imagens/plano_de_fundo.jpg")
+        SceneManager.screen.blit(FUNDO, (0, 0))
+        for opcao in self.opcoes:
+            opcao.render()
+        
+    def pygame_events(self, e):
+        super(CenaInicial, self).pygame_events(e)
+        if e.type == MOUSEBUTTONDOWN:
+            self.mouse_button = True
+            self.mouse_pos = e.pos
+            
+    def process(self):
+        opcao = self.opcaoClicada()
+        if opcao is not None:
+            if opcao.nome == "iniciar":
+                SceneManager.scene = CenaJogo()
+            elif opcao.nome == "ranking":
+                SceneManager.scene = CenaPontuacoes()
+            elif opcao.nome == "creditos":
+                SceneManager.scene = CenaCreditos()
+            elif opcao.nome == "sair":
+                SceneManager.exit()
+        self.mouse_button = False # resetar clique
+        
+    def opcaoClicada(self):
+        x = self.mouse_pos[0]
+        y = self.mouse_pos[1]
+        if self.mouse_button:
+            for opcao in self.opcoes:
+                if opcao.verificarClique(x, y):
+                    return opcao
+        return None
+    
+    def finish(self):
+        del self.opcoes
+        del self.mouse_pos
+        del self.mouse_button
+       
+
 #Cena do Jogo
 class CenaJogo(SceneBase):
     """ Tela principal do Jogo """
@@ -341,11 +352,11 @@ class CenaJogo(SceneBase):
     
     def process(self):
         if len(self.cartas) == 0:
-            SceneManager.scene = CenaFimPartida("venceu")
+            SceneManager.scene = CenaFimPartida("venceu", self.pontuacao, self.relogio)
         if self.relogio.zero():
-            SceneManager.scene = CenaFimPartida("perdeu")
+            SceneManager.scene = CenaFimPartida("perdeu", self.pontuacao, self.relogio)
         if self.turno != 0 and (time.time() - self.tempo) >= 1:
-            self.relogio.decremento()
+            self.relogio.decrement()
             self.tempo = time.time()
         if (time.time() - self.tempo2) <= self.espera:
             self.mouse_button = False
@@ -358,7 +369,6 @@ class CenaJogo(SceneBase):
             self.turno = 1
             for c in self.cartas:
                 c.selecionada = False
-            #self.cartas = [] #TESTE - VENCER
         elif self.turno == 1:
             if c:
                 c.selecionada = True
@@ -366,10 +376,6 @@ class CenaJogo(SceneBase):
                 self.turno = 2
         elif self.turno == 2:
             if c:
-                #if c == self.par[0]: #Se clicar na mesma carta
-                #    c.selecionada = False
-                #    self.par = []
-                #    self.turno = 1
                 if c != self.par[0]: #Se clicar em carta diferente
                     c.selecionada = True
                     self.par.append(c)
@@ -377,8 +383,6 @@ class CenaJogo(SceneBase):
                         #Acerto
                         self.acertou = True
                         self.pontuacao += 1
-                        #self.par[0].retirarCarta()
-                        #self.par[1].retirarCarta()
                         self.espera = 1
                         self.tempo2 = time.time()
                     else:
@@ -386,7 +390,7 @@ class CenaJogo(SceneBase):
                         self.espera = 1
                         self.tempo2 = time.time()
                         for _ in xrange(DESCONTO):
-                            self.relogio.decremento()
+                            self.relogio.decrement()
                     self.turno = 3
         elif self.turno == 3:
             if self.acertou:
@@ -422,9 +426,19 @@ class CenaJogo(SceneBase):
         del self.espera
         del self.acertou
 
+
 class CenaFimPartida(SceneBase):
 
-    def __init__(self, resultado):
+    def __init__(self, resultado, score, clock):
+        seconds = TEMPO[0] * 60 + TEMPO[1] - (clock.get_minutes() * 60 + clock.get_seconds())
+        self.name = ''
+        self.record = Record(score, seconds)
+        self.new_record = Rank.is_record(self.record)
+        self.confirmed = True
+        print self.new_record
+        if self.new_record:
+            self.input_name_imagem = pygame.image.load("imagens/fundo.jpg")
+            self.confirmed = False
         if resultado == "venceu":
             self.imagem = pygame.image.load("imagens/venceu.png")
         elif resultado == "perdeu":
@@ -435,22 +449,45 @@ class CenaFimPartida(SceneBase):
         
     def render(self):
         SceneManager.screen.blit(self.imagem, (0, 0))
+        if not self.confirmed and self.new_record:
+            SceneManager.screen.blit(self.input_name_imagem, (0, 0))
+            text = "Nome: %s" % self.name
+            font_surface = FONTE.render(text, False, Color(255,255,255))
+            SceneManager.screen.blit(font_surface, (0, 0))
         
     def pygame_events(self, e):
         super(CenaFimPartida, self).pygame_events(e)
+        if e.type == KEYDOWN:
+            if e.key == K_BACKSPACE:
+                name_length = len(self.name)
+                if name_length > 0:
+                    self.name = self.name[0:name_length-1]
+            elif e.key == K_RETURN:
+                self.confirmed = True
+            else:
+                if len(self.name) < NAME_SIZE_LIMIT:
+                        self.name += e.unicode
+            print self.name
         if e.type == MOUSEBUTTONDOWN:
             self.mouse_button = True
 
     def process(self):
-        if (time.time() - self.tempo) >= self.espera and self.mouse_button:
+        if not self.new_record and (time.time() - self.tempo) >= self.espera and self.mouse_button:
             SceneManager.scene = CenaInicial()
+        if self.new_record and self.confirmed:
+            SceneManager.scene = CenaInicial()#CenaScore
     
     def finish(self):
+        if self.new_record:
+            self.record.name = self.name
+            Rank.add(self.record)
+        del self.input_name_imagem
         del self.imagem
         del self.tempo
         del self.espera
         del self.mouse_button
-        
+
+
 class CenaPontuacoes(SceneBase):
 
     def __init__(self):
@@ -481,6 +518,7 @@ class CenaPontuacoes(SceneBase):
 #    pass #
     
 if __name__ == "__main__":
+    Rank.load()
     SceneManager.createWindow(1120 + 48, 480)
     SceneManager.scene = CenaInicial()
     SceneManager.run()
