@@ -7,9 +7,12 @@ from random import shuffle
 #from random import random # Em construcao
 import time
 import math
+from datetime import datetime
+import pickle
 
 pygame.init()
 
+RECORDS_FILE = 'data/records.db'
 VAZIO = pygame.Color(0, 0, 0, 0)
 FUNDO_CARTA = pygame.image.load("imagens/fundo.jpg")
 TEMPO = (2,0)
@@ -209,7 +212,56 @@ class CenaInicial(SceneBase):
         del self.opcoes
         del self.mouse_pos
         del self.mouse_button
-        
+       
+
+class Record(object):
+    def __init__(self, name, score, time, date=datetime.now()):
+        self.name = name
+        self.score = score
+        self.time = time
+        self.date = date 
+
+
+class Rank(object):
+    __records = None
+
+    @classmethod
+    def load(cls):
+        if cls.__records is not None:
+            return False
+        records_file = None
+        try:
+            records_file = open(RECORDS_FILE)
+        except IOError:
+            records_file = file(RECORDS_FILE, 'w')
+            pickle.dump([], records_file, 2)
+            records_file.close()
+            records_file = open(RECORDS_FILE)
+        cls.__records = pickle.load(records_file)
+        cls.__records = sorted(cls.__records, key=lambda x: x.time)
+        cls.__records = sorted(cls.__records, key=lambda x: x.score, reverse=True)
+        return True
+
+    @classmethod
+    def __save(cls):
+        records_file = file(RECORDS_FILE, 'w')
+        pickle.dump(cls.__records, records_file, 2)
+
+    @classmethod
+    def is_record(cls, record):
+        pass
+
+    @classmethod
+    def p(cls):
+        for r in cls.__records:
+            print r.name
+
+    @classmethod
+    def add(cls, record):
+        cls.__records.append(record)
+        cls.__save()
+
+
 #Cena do Jogo
 class CenaJogo(SceneBase):
     """ Tela principal do Jogo """

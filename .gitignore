@@ -1,4 +1,5 @@
 *.py[co]
+records.db
 
 # Packages
 *.egg
