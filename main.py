@@ -232,6 +232,11 @@ class Rank(object):
         return copy.deepcopy(cls.__records)
 
     @classmethod
+    def pop(cls):
+        cls.__records.pop()
+        cls.__save()
+
+    @classmethod
     def add(cls, record):
         rank_length = len(cls.__records) 
         if rank_length == RANK_LIMIT:
@@ -354,6 +359,7 @@ class CenaJogo(SceneBase):
         if len(self.cartas) == 0:
             SceneManager.scene = CenaFimPartida("venceu", self.pontuacao, self.relogio)
         if self.relogio.zero():
+            self.relogio = Relogio(0, 0)
             SceneManager.scene = CenaFimPartida("perdeu", self.pontuacao, self.relogio)
         if self.turno != 0 and (time.time() - self.tempo) >= 1:
             self.relogio.decrement()
@@ -435,7 +441,6 @@ class CenaFimPartida(SceneBase):
         self.record = Record(score, seconds)
         self.new_record = Rank.is_record(self.record)
         self.confirmed = True
-        print self.new_record
         if self.new_record:
             self.input_name_imagem = pygame.image.load("imagens/fundo.jpg")
             self.confirmed = False
@@ -446,6 +451,7 @@ class CenaFimPartida(SceneBase):
         self.tempo = time.time()
         self.espera = 2
         self.mouse_button = False
+        self.k_enter = False
         
     def render(self):
         SceneManager.screen.blit(self.imagem, (0, 0))
@@ -464,24 +470,26 @@ class CenaFimPartida(SceneBase):
                     self.name = self.name[0:name_length-1]
             elif e.key == K_RETURN:
                 self.confirmed = True
+                self.k_enter = True
             else:
                 if len(self.name) < NAME_SIZE_LIMIT:
                         self.name += e.unicode
-            print self.name
         if e.type == MOUSEBUTTONDOWN:
             self.mouse_button = True
 
     def process(self):
-        if not self.new_record and (time.time() - self.tempo) >= self.espera and self.mouse_button:
+        if not self.new_record and (time.time() - self.tempo) >= self.espera and (self.mouse_button or self.k_enter):
             SceneManager.scene = CenaInicial()
         if self.new_record and self.confirmed:
             SceneManager.scene = CenaPontuacoes()
+        self.mouse_button = False
+        self.k_enter = False
     
     def finish(self):
         if self.new_record:
             self.record.name = self.name
             Rank.add(self.record)
-        del self.input_name_imagem
+            del self.input_name_imagem
         del self.imagem
         del self.tempo
         del self.espera
