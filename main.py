@@ -196,7 +196,7 @@ class Rank(object):
             records_file = open(RECORDS_FILE)
         except IOError:
             records_file = file(RECORDS_FILE, 'w')
-            pickle.dump([], records_file, 2)
+            pickle.dump([], records_file, 0)
             records_file.close()
             records_file = open(RECORDS_FILE)
         cls.__records = pickle.load(records_file)
@@ -206,7 +206,7 @@ class Rank(object):
     @classmethod
     def __save(cls):
         records_file = file(RECORDS_FILE, 'w')
-        pickle.dump(cls.__records, records_file, 2)
+        pickle.dump(cls.__records, records_file, 0)
 
     @classmethod
     def is_record(cls, record):
@@ -442,7 +442,7 @@ class CenaFimPartida(SceneBase):
         self.new_record = Rank.is_record(self.record)
         self.confirmed = True
         if self.new_record:
-            self.input_name_imagem = pygame.image.load("imagens/fundo.jpg")
+            self.input_name_imagem = pygame.image.load("imagens/novo_recorde.png")
             self.confirmed = False
         if resultado == "venceu":
             self.imagem = pygame.image.load("imagens/venceu.png")
@@ -457,8 +457,8 @@ class CenaFimPartida(SceneBase):
         SceneManager.screen.blit(self.imagem, (0, 0))
         if not self.confirmed and self.new_record:
             SceneManager.screen.blit(self.input_name_imagem, (0, 0))
-            text = "Nome: %s" % self.name
-            font_surface = FONTE.render(text, False, Color(255,255,255))
+            text = self.name
+            font_surface = FONTE.render(text, False, Color(0, 0, 0))
             SceneManager.screen.blit(font_surface, (0, 0))
         
     def pygame_events(self, e):
@@ -499,46 +499,53 @@ class CenaFimPartida(SceneBase):
 class CenaPontuacoes(SceneBase):
 
     def __init__(self):
-        self.imagem = pygame.image.load("imagens/emcontrucao.png")
+        self.imagem = pygame.image.load("imagens/hall_plano_de_fundo.png")
         self.tempo = time.time()
         self.espera = 2
         self.mouse_button = False
+        self.k_return = False
         self.mouse_pos = (-1, -1)
-        self.exit_button = Botao("sair", "sair.png", x=1168/2, y=220)
+        self.exit_button = Botao("ok", "ok.png", x=1168/2, y=220)
         
     def render(self):
         SceneManager.screen.blit(self.imagem, (0, 0))
         self.exit_button.render()
         text = 'Nome\tPontuação\tTempo'
         text = text.decode('utf-8')
-        x = 0
+        x = 20 ###
         for i in text.split('\t'):
             font_surface = FONTE.render(i, False, Color(0, 0, 0))
-            SceneManager.screen.blit(font_surface, (x, 0))
+            SceneManager.screen.blit(font_surface, (x, 20))
             x += 100
-        y = font_surface.get_height() + 2
+        y = font_surface.get_height() + 4 + 20
         for record in Rank.get_records():
             text = '%s\t%s\t%ss' % (record.name, record.score, record.time)
             text = text.decode('utf-8')
-            x = 0
+            x = 20
             for i in text.split('\t'):
                 font_surface = FONTE.render(i, False, Color(0, 0, 0))
                 SceneManager.screen.blit(font_surface, (x, y))
                 x += 100
-            y += font_surface.get_height() + 2
+            y += font_surface.get_height() + 4
         
     def pygame_events(self, e):
         super(CenaPontuacoes, self).pygame_events(e)
         if e.type == MOUSEBUTTONDOWN:
             self.mouse_button = True
             self.mouse_pos = e.pos
+        elif e.type == KEYDOWN:
+            if e.key == K_RETURN:
+				self.k_return = True
 
     def process(self):
         opcao = self.opcaoClicada()
+        if self.k_return:
+            SceneManager.scene = CenaInicial()
         if opcao is not None:
-            if opcao.nome == "sair":
+            if opcao.nome == "ok":
                 SceneManager.scene = CenaInicial()
         self.mouse_button = False # resetar clique
+        self.k_return = False
             
     def finish(self):
         del self.imagem
