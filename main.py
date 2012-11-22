@@ -9,6 +9,7 @@ import math
 from datetime import datetime
 import pickle
 import copy
+import re
 
 pygame.init()
 
@@ -20,7 +21,7 @@ FUNDO_CARTA = pygame.image.load("imagens/fundo.jpg")
 TEMPO = (2,0)
 DESCONTO = 5
 ESPERA = 2
-FONTE = pygame.font.SysFont('arial', 15)
+FONTE = pygame.font.SysFont('arial', 11)
 MEMES = [("challenge.png", 0),
         ("foreveralone.png", 1),
         ("fuckyea.png", 2),
@@ -30,7 +31,7 @@ MEMES = [("challenge.png", 0),
         ("poker.png", 6),
         ("troll.png", 7)]
 MEMES.extend(list(MEMES))
-
+VALIDATION_RE = re.compile(r'^\s*$')
 
 class SceneManager(object):
     """ Classe que gerencia as Cenas"""
@@ -456,10 +457,12 @@ class CenaFimPartida(SceneBase):
     def render(self):
         SceneManager.screen.blit(self.imagem, (0, 0))
         if not self.confirmed and self.new_record:
-            SceneManager.screen.blit(self.input_name_imagem, (0, 0))
+            SceneManager.screen.blit(self.input_name_imagem, (425, 200))
             text = self.name
-            font_surface = FONTE.render(text, False, Color(0, 0, 0))
-            SceneManager.screen.blit(font_surface, (0, 0))
+            for i, letter in enumerate(text):
+                font_surface = FONTE.render(letter, False, Color(0, 0, 0))
+                w = font_surface.get_width()
+                SceneManager.screen.blit(font_surface, (521 + i * 25, 268))
         
     def pygame_events(self, e):
         super(CenaFimPartida, self).pygame_events(e)
@@ -469,8 +472,10 @@ class CenaFimPartida(SceneBase):
                 if name_length > 0:
                     self.name = self.name[0:name_length-1]
             elif e.key == K_RETURN:
-                self.confirmed = True
-                self.k_enter = True
+                validation = VALIDATION_RE.search(self.name)
+                if validation is None:
+                    self.confirmed = True
+                    self.k_enter = True
             else:
                 if len(self.name) < NAME_SIZE_LIMIT:
                         self.name += e.unicode
@@ -500,33 +505,42 @@ class CenaPontuacoes(SceneBase):
 
     def __init__(self):
         self.imagem = pygame.image.load("imagens/hall_plano_de_fundo.png")
+        self.hall = pygame.image.load("imagens/hall.png")
         self.tempo = time.time()
         self.espera = 2
         self.mouse_button = False
         self.k_return = False
         self.mouse_pos = (-1, -1)
-        self.exit_button = Botao("ok", "ok.png", x=1168/2, y=220)
+        self.exit_button = Botao("ok", "ok.png", x=1168/2, y=400)
         
     def render(self):
         SceneManager.screen.blit(self.imagem, (0, 0))
+        SceneManager.screen.blit(self.hall, (442, 34))
         self.exit_button.render()
         text = 'Nome\tPontuação\tTempo'
         text = text.decode('utf-8')
-        x = 20 ###
+        X = 450
+        Y = 40
+        x = X ###
         for i in text.split('\t'):
-            font_surface = FONTE.render(i, False, Color(0, 0, 0))
-            SceneManager.screen.blit(font_surface, (x, 20))
+            font_surface = FONTE.render(i, False, Color(255, 255, 255))
+            SceneManager.screen.blit(font_surface, (x, Y))
             x += 100
-        y = font_surface.get_height() + 4 + 20
+        y = font_surface.get_height() + 10 + Y
+        color_flag = False
         for record in Rank.get_records():
             text = '%s\t%s\t%ss' % (record.name, record.score, record.time)
             text = text.decode('utf-8')
-            x = 20
+            x = X
             for i in text.split('\t'):
-                font_surface = FONTE.render(i, False, Color(0, 0, 0))
+                color = Color(0, 0, 0)
+                if color_flag:
+                    color = Color(51, 204, 51)
+                font_surface = FONTE.render(i, False, color)
                 SceneManager.screen.blit(font_surface, (x, y))
                 x += 100
-            y += font_surface.get_height() + 4
+            y += font_surface.get_height() + 9.5
+            color_flag = not color_flag
         
     def pygame_events(self, e):
         super(CenaPontuacoes, self).pygame_events(e)
@@ -566,7 +580,10 @@ class CenaPontuacoes(SceneBase):
 #    pass #
     
 if __name__ == "__main__":
+    pygame.mixer.music.load('sounds/Shuffle or Boogie.mp3')
     Rank.load()
+    pygame.mixer.music.play(-1)
     SceneManager.createWindow(1120 + 48, 480)
     SceneManager.scene = CenaInicial()
     SceneManager.run()
+    pygame.mixer.music.stop()
